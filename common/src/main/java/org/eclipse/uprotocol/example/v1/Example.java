@@ -23,19 +23,16 @@
  */
 package org.eclipse.uprotocol.example.v1;
 
-import static org.eclipse.uprotocol.rpc.RpcMapper.mapResponse;
-import static org.eclipse.uprotocol.transport.builder.UPayloadBuilder.packToAny;
+import static org.eclipse.uprotocol.communication.RpcMapper.mapResponse;
+import static org.eclipse.uprotocol.communication.UPayload.packToAny;
+import static org.eclipse.uprotocol.uri.validator.UriValidator.DEFAULT_RESOURCE_ID;
 
-import com.google.protobuf.DescriptorProtos.ServiceOptions;
+import com.google.protobuf.Descriptors.ServiceDescriptor;
 
-import org.eclipse.uprotocol.UprotocolOptions;
-import org.eclipse.uprotocol.rpc.RpcClient;
-import org.eclipse.uprotocol.uri.factory.UResourceBuilder;
-import org.eclipse.uprotocol.v1.CallOptions;
-import org.eclipse.uprotocol.v1.UAuthority;
-import org.eclipse.uprotocol.v1.UEntity;
-import org.eclipse.uprotocol.v1.UPriority;
-import org.eclipse.uprotocol.v1.UResource;
+import org.eclipse.uprotocol.Uoptions;
+import org.eclipse.uprotocol.communication.CallOptions;
+import org.eclipse.uprotocol.communication.RpcClient;
+import org.eclipse.uprotocol.uri.factory.UriFactory;
 import org.eclipse.uprotocol.v1.UStatus;
 import org.eclipse.uprotocol.v1.UUri;
 
@@ -44,69 +41,43 @@ import java.util.concurrent.CompletionStage;
 
 @SuppressWarnings({"unused", "SameParameterValue"})
 public class Example {
-    public static final UEntity SERVICE = UEntity.newBuilder()
-            .setName(getServiceName())
-            .setVersionMajor(getServiceVersion())
-            .build();
-    public static final String METHOD_EXECUTE_DOOR_COMMAND = "ExecuteDoorCommand";
-
-    public static final UResource DOOR_FRONT_LEFT = UResource.newBuilder()
-            .setName("doors")
-            .setInstance("front_left")
-            .setMessage("Doors")
-            .build();
-
-    private static final CallOptions DEFAULT_OPTIONS = CallOptions.newBuilder()
-            .setPriority(UPriority.UPRIORITY_CS4)
-            .setTtl(10_000)
-            .build();
+    public static final ServiceDescriptor DESCRIPTOR = ExampleProto.getDescriptor().getServices().get(0);
+    public static final String NAME = DESCRIPTOR.getOptions().getExtension(Uoptions.serviceName);
+    public static final UUri SERVICE = UriFactory.fromProto(DESCRIPTOR, DEFAULT_RESOURCE_ID);
+    public static final UUri METHOD_EXECUTE_DOOR_COMMAND = UriFactory.fromProto(DESCRIPTOR, 1);
+    public static final UUri TOPIC_DOORS_FRONT_LEFT = UriFactory.fromProto(DESCRIPTOR, 0x8000);
+    public static final UUri TOPIC_DOORS_FRONT_RIGHT = UriFactory.fromProto(DESCRIPTOR, 0x8001);
 
     private Example() {}
 
-    private static String getServiceName() {
-        final ServiceOptions options = ExampleProto.getDescriptor().findServiceByName("Example").getOptions();
-        return (options != null) ? options.getExtension(UprotocolOptions.name) : "";
-    }
-
-    private static int getServiceVersion() {
-        final ServiceOptions options = ExampleProto.getDescriptor().findServiceByName("Example").getOptions();
-        return (options != null) ? options.getExtension(UprotocolOptions.versionMajor) : 0;
-    }
-
     public static Example.Stub newStub(RpcClient proxy) {
-        return newStub(proxy, null, DEFAULT_OPTIONS);
+        return newStub(proxy, null, CallOptions.DEFAULT);
     }
 
     public static Example.Stub newStub(RpcClient proxy, CallOptions options) {
         return newStub(proxy, null, options);
     }
 
-    public static Example.Stub newStub(RpcClient proxy, UAuthority authority, CallOptions options) {
+    public static Example.Stub newStub(RpcClient proxy, String authority, CallOptions options) {
         return new Example.Stub(proxy, authority, options);
     }
 
     public static class Stub {
         private final RpcClient proxy;
-        private final UAuthority authority;
+        private final String authority;
         private final CallOptions options;
 
-        private Stub(RpcClient proxy, UAuthority authority, CallOptions options) {
+        private Stub(RpcClient proxy, String authority, CallOptions options) {
             this.proxy = proxy;
             this.authority = authority;
             this.options = options;
         }
 
-        private UUri buildUri(String method) {
-            final UUri.Builder builder = UUri.newBuilder()
-                    .setEntity(SERVICE)
-                    .setResource(UResourceBuilder.forRpcRequest(method));
-            if (authority != null) {
-                builder.setAuthority(authority);
-            }
-            return builder.build();
+        private UUri appendAuthority(UUri methodUri) {
+            return (authority != null) ? UUri.newBuilder(methodUri).setAuthorityName(authority).build() : methodUri;
         }
 
-        public Optional<UAuthority> getAuthority() {
+        public Optional<String> getAuthority() {
             return (authority != null) ? Optional.of(authority) : Optional.empty();
         }
 
@@ -115,7 +86,7 @@ public class Example {
         }
 
         public CompletionStage<UStatus> executeDoorCommand(DoorCommand request) {
-            return mapResponse(proxy.invokeMethod(buildUri(METHOD_EXECUTE_DOOR_COMMAND), packToAny(request), options), UStatus.class);
+            return mapResponse(proxy.invokeMethod(appendAuthority(METHOD_EXECUTE_DOOR_COMMAND), packToAny(request), options), UStatus.class);
         }
     }
 }

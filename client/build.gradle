@@ -11,6 +11,7 @@
  */
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 apply from: '../gradle/config.gradle'
@@ -49,14 +50,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility config.jvm.version.java
+        targetCompatibility config.jvm.version.java
     }
 }
 
 dependencies {
     implementation libs.android.material
-    implementation libs.up.client.android.java
+    implementation libs.up.transport.android.java
     implementation libs.up.java
     implementation project(path: ':common')
 }

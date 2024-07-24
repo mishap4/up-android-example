@@ -26,9 +26,9 @@ syntax = "proto3";
 
 package uprotocol.example.v1;
 
-import "ustatus.proto";
-import "uri.proto";
-import "uprotocol_options.proto";
+import "uprotocol/uoptions.proto";
+import "uprotocol/v1/ustatus.proto";
+import "uprotocol/v1/uri.proto";
 
 option java_package = "org.eclipse.uprotocol.example.v1";
 option java_outer_classname = "ExampleProto";
@@ -36,12 +36,25 @@ option java_multiple_files = true;
 
 // The greeting service definition.
 service Example {
-  option (name) = "example.service";
-  option (version_major) = 1;
-  option (version_minor) = 0;
+  option (uprotocol.service_name) = "example.service";
+  option (uprotocol.service_version_major) = 1;
+  option (uprotocol.service_version_minor) = 0;
+  option (uprotocol.service_id) = 0x52;
+
+  option (uprotocol.publish_topic) = {
+    id: 0x8000,
+    name: "doors.front_left",
+    message: "Doors"
+  };
+
+  option (uprotocol.publish_topic) = {
+    id: 0x8001,
+    name: "doors.front_right",
+    message: "Doors"
+  };
 
   rpc executeDoorCommand (DoorCommand) returns (uprotocol.v1.UStatus) {
-    option (method_id) = 1;
+    option (uprotocol.method_id) = 1;
   }
 }
 
@@ -56,6 +69,6 @@ message DoorCommand {
 }
 
 message Door {
-  string instance = 1;
+  uint32 id = 1;
   optional bool locked = 2;
 }

@@ -13,6 +13,12 @@ ext {
     config = [
         toolsVersion    : '34.0.0',
         sdkVersion      : 34,
-        minSdkVersion   : 31,
+        minSdkVersion   : 34,
+        jvm : [
+            version : [
+                java    : JavaVersion.VERSION_17,
+                kotlin  : "17",
+            ]
+        ],
     ]
 }

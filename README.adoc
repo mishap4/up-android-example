@@ -5,7 +5,7 @@
 :source-highlighter: coderay
 
 == Overview
-In this project, you will find two modules demonstrating sample Android implementations of a uService and a uClient. These implementations utilize the Binder uTransport (https://github.com/eclipse-uprotocol/up-client-android-java/blob/main/README.adoc[Android uPClient]) for communication.
+In this project, you will find two modules demonstrating sample Android implementations of a uService and a uClient. These implementations utilize the Binder uTransport (https://github.com/eclipse-uprotocol/up-transport-android-java/blob/main/README.adoc[Android uTransport]) for communication.
 
 == Getting Started
 === Building the Project

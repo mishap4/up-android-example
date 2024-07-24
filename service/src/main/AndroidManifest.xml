@@ -28,8 +28,8 @@
             android:enabled="true"
             android:exported="true">
             <meta-data
-                android:name="uprotocol.entity.name"
-                android:value="example.service" />
+                android:name="uprotocol.entity.id"
+                android:value="0x52" />
             <meta-data
                 android:name="uprotocol.entity.version"
                 android:value="1" />

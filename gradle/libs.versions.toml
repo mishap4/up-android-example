@@ -9,15 +9,16 @@
 # SPDX-FileCopyrightText: 2023 General Motors GTO LLC
 # SPDX-License-Identifier: Apache-2.0
 [versions]
-android = "8.2.+"
-android-material = "1.11.0"
-androidx-annotation = "1.7.1"
+android = "8.4.+"
+android-material = "1.12.0"
+androidx-annotation = "1.8.1"
 javax-annotation = "1.3.2"
 google-protobuf = "0.9.4"
 google-protoc = "3.19.2"
-grpc = "1.45.1"
-up-client-android-java = "0.1.+"
-up-java = "0.1.+"
+grpc = "1.57.0"
+kotlin = "2.0.10"
+up-transport-android-java = "1.0.+"
+up-java = "2.0.+"
 
 [libraries]
 android-material = { module = "com.google.android.material:material", version.ref = "android-material" }
@@ -26,10 +27,11 @@ javax-annotation = { module = 'javax.annotation:javax.annotation-api', version.r
 google-protoc = { module = 'com.google.protobuf:protoc', version.ref = "google-protoc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc"}
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc"}
-up-client-android-java = { module = "org.eclipse.uprotocol:up-client-android-java", version.ref = "up-client-android-java" }
+up-transport-android-java = { module = "org.eclipse.uprotocol:up-transport-android-java", version.ref = "up-transport-android-java" }
 up-java = { module = "org.eclipse.uprotocol:up-java", version.ref = "up-java" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android" }
 android-library = { id = "com.android.library", version.ref = "android" }
 google-protobuf = { id = "com.google.protobuf", version.ref = "google-protobuf" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

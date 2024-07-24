@@ -21,14 +21,47 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp">
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp">
 
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             tools:ignore="UselessParent">
+
+            <Button
+                android:id="@+id/door_lock_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_below="@id/door_label"
+                android:layout_marginEnd="5dp"
+                android:minWidth="120dp"
+                android:text="@string/lock_label"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/door_unlock_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@id/door_lock_button"
+                android:layout_toEndOf="@id/door_lock_button"
+                android:layout_marginEnd="5dp"
+                android:minWidth="120dp"
+                android:text="@string/unlock_label"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/door_update_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@id/door_unlock_button"
+                android:layout_toEndOf="@id/door_unlock_button"
+                android:layout_marginEnd="5dp"
+                android:minWidth="120dp"
+                android:text="@string/update_label"
+                android:textSize="20sp" />
 
             <TextView
                 android:id="@+id/door_label"
@@ -37,9 +70,9 @@
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
                 android:layout_marginEnd="5dp"
-                android:text="@string/selectOption"
-                android:textStyle="bold"
-                android:textSize="20sp" />
+                android:text="@string/door_label"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/door_lock_state"
@@ -47,29 +80,6 @@
                 android:layout_height="wrap_content"
                 android:layout_toEndOf="@id/door_label"
                 android:textSize="20sp" />
-
-            <Spinner
-                android:id="@+id/udiscovery_spinner"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/door_label"
-                android:layout_alignParentStart="true"
-                android:layout_marginEnd="5dp"
-                android:dropDownSelector="@color/design_default_color_background"
-                android:focusedByDefault="false"
-                android:minWidth="100dp"
-                android:minHeight="48dp"
-                android:saveEnabled="true" />
-
-            <Button
-                android:id="@+id/execute"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_toEndOf="@id/udiscovery_spinner"
-                android:layout_alignBaseline="@id/udiscovery_spinner"
-                android:minWidth="120dp"
-                android:text="@string/execute"
-                android:textSize="15sp" />
         </RelativeLayout>
     </LinearLayout>
 
@@ -77,15 +87,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/output_header"
-            android:layout_width="match_parent"
+        <ImageButton
+            android:id="@+id/clear_output_button"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:text="@string/output_label"
-            android:textStyle="bold"
-            android:textSize="20sp" />
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginBottom="15dp"
+            android:layout_marginEnd="15dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_delete"
+            tools:ignore="ContentDescription" />
 
         <ScrollView
             android:id="@+id/output_scroller"
@@ -101,16 +113,14 @@
                 android:textSize="20sp" />
         </ScrollView>
 
-        <ImageButton
-            android:id="@+id/clear_output_button"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/output_header"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginEnd="15dp"
-            android:layout_marginBottom="15dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
-            tools:ignore="ContentDescription,ImageContrastCheck" />
+            android:paddingBottom="10dp"
+            android:paddingTop="10dp"
+            android:text="@string/output_label"
+            android:textSize="20sp"
+            android:textStyle="bold" />
     </RelativeLayout>
 </LinearLayout>

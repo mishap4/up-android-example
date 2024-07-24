@@ -12,34 +12,12 @@
 -->
 <resources>
     <string name="app_name">uClient Example</string>
-    <string name="usubscription_label">uSubscription</string>
-    <string name="udiscovery_label">uDiscovery</string>
+    <string name="example_label">Example</string>
     <string name="door_label">Door:</string>
     <string name="lock_label">Lock</string>
     <string name="unlock_label">Unlock</string>
+    <string name="update_label">Update</string>
     <string name="output_label">Output:</string>
     <string name="locked">Locked</string>
     <string name="unlocked">Unlocked</string>
-    <string name="lookupUri" translatable="false">LookupUri</string>
-    <string name="findNodes" translatable="false">FindNodes</string>
-    <string name="findNodeProperties" translatable="false">FindNodeProperties</string>
-    <string name="updateNode" translatable="false">UpdateNode</string>
-    <string name="deleteNodes" translatable="false">DeleteNodes</string>
-    <string name="addNodes" translatable="false">AddNodes</string>
-    <string name="updateProperty" translatable="false">UpdateProperty</string>
-    <string name="registerForNotifications" translatable="false">RegisterForNotifications</string>
-    <string name="unregisterForNotifications" translatable="false">UnregisterForNotifications</string>
-    <string name="execute">Execute</string>
-    <string name="selectOption">Select Option</string>
-    <string-array name="udiscovery_methods">
-        <item>@string/lookupUri</item>
-        <item>@string/findNodes</item>
-        <item>@string/findNodeProperties</item>
-        <item>@string/updateNode</item>
-        <item>@string/deleteNodes</item>
-        <item>@string/addNodes</item>
-        <item>@string/updateProperty</item>
-        <item>@string/registerForNotifications</item>
-        <item>@string/unregisterForNotifications</item>
-    </string-array>
 </resources>

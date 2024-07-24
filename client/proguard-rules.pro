@@ -39,4 +39,5 @@
 -keepnames class * extends androidx.fragment.app.Fragment{ *; }
 
 # This is generated automatically by the Android Gradle plugin.
+-dontwarn java.lang.reflect.AnnotatedType
 -dontwarn javax.lang.model.element.Modifier

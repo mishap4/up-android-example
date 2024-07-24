@@ -36,14 +36,10 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
-import org.eclipse.uprotocol.v1.UEntity;
-
 @SuppressWarnings("SwitchStatementWithTooFewBranches")
 public class MainActivity extends AppCompatActivity {
-    public static final UEntity ENTITY = UEntity.newBuilder()
-            .setName("example.client")
-            .setVersionMajor(1)
-            .build();
+    public static final String TAG = "example.client";
+    private static final int TOTAL_TABS = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +48,13 @@ public class MainActivity extends AppCompatActivity {
 
         final TabLayout layout = findViewById(R.id.tabs);
         final ViewPager2 viewPager = findViewById(R.id.pager);
-        viewPager.setAdapter(new MainPagerAdapter(getSupportFragmentManager(), getLifecycle(), 2));
+        viewPager.setAdapter(new MainPagerAdapter(getSupportFragmentManager(), getLifecycle(), TOTAL_TABS));
+        if (TOTAL_TABS <= 1) {
+            layout.setVisibility(TabLayout.GONE);
+        }
 
         new TabLayoutMediator(layout, viewPager, (tab, position) -> tab.setText(switch (position) {
-            default -> R.string.usubscription_label;
-            case 1 -> R.string.udiscovery_label;
+            default -> R.string.example_label;
         })).attach();
     }
 
@@ -71,8 +69,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public @NonNull Fragment createFragment(int position) {
             return switch (position) {
-                default -> USubscriptionFragment.newInstance();
-                case 1 -> UDiscoveryFragment.newInstance();
+                default -> ExampleFragment.newInstance();
             };
         }
 

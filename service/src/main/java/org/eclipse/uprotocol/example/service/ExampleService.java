@@ -25,13 +25,14 @@ package org.eclipse.uprotocol.example.service;
 
 import static org.eclipse.uprotocol.common.util.UStatusUtils.STATUS_OK;
 import static org.eclipse.uprotocol.common.util.UStatusUtils.checkArgument;
+import static org.eclipse.uprotocol.common.util.UStatusUtils.checkStatusOk;
 import static org.eclipse.uprotocol.common.util.UStatusUtils.isOk;
 import static org.eclipse.uprotocol.common.util.UStatusUtils.toStatus;
 import static org.eclipse.uprotocol.common.util.log.Formatter.join;
 import static org.eclipse.uprotocol.common.util.log.Formatter.status;
 import static org.eclipse.uprotocol.common.util.log.Formatter.stringify;
-import static org.eclipse.uprotocol.transport.builder.UPayloadBuilder.packToAny;
-import static org.eclipse.uprotocol.transport.builder.UPayloadBuilder.unpack;
+
+import static java.util.concurrent.CompletableFuture.allOf;
 
 import android.app.Service;
 import android.content.Intent;
@@ -42,105 +43,56 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.eclipse.uprotocol.UPClient;
-import org.eclipse.uprotocol.common.UStatusException;
 import org.eclipse.uprotocol.common.util.log.Key;
-import org.eclipse.uprotocol.core.usubscription.v3.CreateTopicRequest;
-import org.eclipse.uprotocol.core.usubscription.v3.USubscription;
+import org.eclipse.uprotocol.communication.RequestHandler;
+import org.eclipse.uprotocol.communication.UClient;
+import org.eclipse.uprotocol.communication.UPayload;
+import org.eclipse.uprotocol.communication.UStatusException;
 import org.eclipse.uprotocol.example.v1.Door;
 import org.eclipse.uprotocol.example.v1.DoorCommand;
 import org.eclipse.uprotocol.example.v1.Example;
-import org.eclipse.uprotocol.transport.UListener;
-import org.eclipse.uprotocol.transport.builder.UAttributesBuilder;
-import org.eclipse.uprotocol.uri.factory.UResourceBuilder;
+import org.eclipse.uprotocol.transport.UTransport;
+import org.eclipse.uprotocol.transport.UTransportAndroid;
+import org.eclipse.uprotocol.uri.factory.UriFactory;
 import org.eclipse.uprotocol.v1.UCode;
 import org.eclipse.uprotocol.v1.UMessage;
-import org.eclipse.uprotocol.v1.UPriority;
-import org.eclipse.uprotocol.v1.UResource;
 import org.eclipse.uprotocol.v1.UStatus;
 import org.eclipse.uprotocol.v1.UUri;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
-@SuppressWarnings("SameParameterValue")
 public class ExampleService extends Service {
-    private static final String TAG = Example.SERVICE.getName();
-    private static final UUri SERVICE_URI = UUri.newBuilder()
-            .setEntity(Example.SERVICE)
-            .build();
-    private static final UResource DOOR_FRONT_LEFT = UResource.newBuilder()
-            .setName("doors")
-            .setInstance("front_left")
-            .setMessage("Doors")
-            .build();
-    private static final UResource DOOR_FRONT_RIGHT = UResource.newBuilder()
-            .setName("doors")
-            .setInstance("front_right")
-            .setMessage("Doors")
-            .build();
-    private static final Map<String, UUri> sDoorTopics = new HashMap<>();
-    static {
-        List.of(DOOR_FRONT_LEFT, DOOR_FRONT_RIGHT)
-                .forEach(resource -> sDoorTopics.put(
-                        resource.getInstance(), UUri.newBuilder(SERVICE_URI)
-                                .setResource(resource)
-                                .build()));
-    }
-
-    private static final Map<String, UUri> sMethodUris = new HashMap<>();
-    static {
-        List.of(Example.METHOD_EXECUTE_DOOR_COMMAND)
-                .forEach(method -> sMethodUris.put(
-                        method, UUri.newBuilder(SERVICE_URI)
-                                .setResource(UResourceBuilder.forRpcRequest(method))
-                                .build()));
-    }
+    private static final String TAG = Example.NAME;
+    private static final Set<Integer> DOOR_IDS = Set.of(
+            Example.TOPIC_DOORS_FRONT_LEFT.getResourceId(),
+            Example.TOPIC_DOORS_FRONT_RIGHT.getResourceId());
 
     private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
-    private final Map<UUri, Consumer<UMessage>> mMethodHandlers = new HashMap<>();
-    private final UListener mRequestListener = this::handleRequestMessage;
-    private UPClient mUPClient;
-    private USubscription.Stub mUSubscriptionStub;
-
-    private static @NonNull UUri mapDoorTopic(@NonNull String instance) {
-        final UUri topic = sDoorTopics.get(instance);
-        return (topic != null) ? topic : UUri.getDefaultInstance();
-    }
-
-    private static @NonNull UUri mapMethodUri(@NonNull String method) {
-        final UUri uri = sMethodUris.get(method);
-        return (uri != null) ? uri : UUri.getDefaultInstance();
-    }
+    private final Map<UUri, RequestHandler> mMethodHandlers = Map.of(
+            Example.METHOD_EXECUTE_DOOR_COMMAND, this::executeDoorCommand);
+    private CompletionStage<UStatus> mTransportStage;
+    private UTransport mTransport;
+    private UClient mClient;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mUPClient = UPClient.create(getApplicationContext(), Example.SERVICE, mExecutor, (client, ready) -> {
-            if (ready) {
-                Log.i(TAG, join(Key.EVENT, "uPClient connected"));
-            } else {
-                Log.w(TAG, join(Key.EVENT, "uPClient unexpectedly disconnected"));
-            }
-        });
-        mUSubscriptionStub = USubscription.newStub(mUPClient);
-
-        mUPClient.connect()
-                .thenCompose(status -> {
-                    logStatus("connect", status);
-                    return isOk(status) ?
-                            CompletableFuture.completedFuture(status) :
-                            CompletableFuture.failedFuture(new UStatusException(status));
-                })
-                .thenCompose(it -> CompletableFuture.allOf(
-                        createTopic(mapDoorTopic(DOOR_FRONT_LEFT.getInstance())),
-                        createTopic(mapDoorTopic(DOOR_FRONT_RIGHT.getInstance())),
-                        registerMethod(mapMethodUri(Example.METHOD_EXECUTE_DOOR_COMMAND), this::executeDoorCommand)));
+        mTransport = UTransportAndroid.create(getApplicationContext(), Example.SERVICE, mExecutor);
+        mTransportStage = mTransport.open()
+                .thenApply(status -> {
+                    checkStatusOk(logStatus("open", status));
+                    mClient = UClient.create(mTransport);
+                    return status;
+                });
+        mTransportStage
+                .thenCompose(status -> allOf(mMethodHandlers.entrySet().stream()
+                        .map(it -> registerRequestHandler(it.getKey(), it.getValue()))
+                        .toArray(CompletableFuture[]::new)));
     }
 
     @Override
@@ -150,93 +102,54 @@ public class ExampleService extends Service {
 
     @Override
     public void onDestroy() {
-        mExecutor.shutdown();
-
-        CompletableFuture.allOf(
-                        unregisterMethod(mapMethodUri(Example.METHOD_EXECUTE_DOOR_COMMAND)))
-                .exceptionally(exception -> null)
-                .thenCompose(it -> mUPClient.disconnect())
-                .whenComplete((status, exception) -> logStatus("disconnect", status));
+        mTransportStage
+                .thenCompose(status -> allOf(mMethodHandlers.entrySet().stream()
+                        .map(it -> unregisterRequestHandler(it.getKey(), it.getValue()))
+                        .toArray(CompletableFuture[]::new)))
+                .whenComplete((status, exception) -> {
+                    mTransport.close();
+                    mExecutor.shutdown();
+                    logStatus("close", STATUS_OK);
+                });
         super.onDestroy();
     }
 
-    private CompletableFuture<UStatus> registerMethod(@NonNull UUri methodUri, @NonNull Consumer<UMessage> handler) {
-        return CompletableFuture.supplyAsync(() -> {
-            final UStatus status = mUPClient.registerListener(methodUri, mRequestListener);
-            if (isOk(status)) {
-                mMethodHandlers.put(methodUri, handler);
-            }
-            return logStatus("registerMethod", status, Key.URI, stringify(methodUri));
-        });
+    private @NonNull CompletableFuture<UStatus> registerRequestHandler(@NonNull UUri methodUri, @NonNull RequestHandler handler) {
+        return mClient.registerRequestHandler(methodUri, handler)
+                .thenApply(it -> logStatus("registerRequestHandler", it, Key.URI, stringify(methodUri)))
+                .toCompletableFuture();
     }
 
-    private CompletableFuture<UStatus> unregisterMethod(@NonNull UUri methodUri) {
-        return CompletableFuture.supplyAsync(() -> {
-            final UStatus status = mUPClient.unregisterListener(methodUri, mRequestListener);
-            mMethodHandlers.remove(methodUri);
-            return logStatus("unregisterMethod", status, Key.URI, stringify(methodUri));
-        });
+    private @NonNull CompletableFuture<UStatus> unregisterRequestHandler(@NonNull UUri methodUri, @NonNull RequestHandler handler) {
+        return mClient.unregisterRequestHandler(methodUri, handler)
+                .thenApply(it -> logStatus("unregisterRequestHandler", it, Key.URI, stringify(methodUri)))
+                .toCompletableFuture();
     }
 
-    private CompletableFuture<UStatus> createTopic(@NonNull UUri topic) {
-        return mUSubscriptionStub.createTopic(CreateTopicRequest.newBuilder()
-                        .setTopic(topic)
-                        .build())
-                .toCompletableFuture()
-                .whenComplete((status, exception) -> {
-                    if (exception != null) { // Communication failure
-                        status = toStatus(exception);
-                    }
-                    logStatus("createTopic", status, Key.TOPIC, stringify(topic));
-                });
-    }
-
-    private void publish(@NonNull UMessage message) {
-        final UStatus status = mUPClient.send(message);
-        logStatus("publish", status, Key.TOPIC, stringify(message.getAttributes().getSource()));
-    }
-
-    private void handleRequestMessage(@NonNull UMessage requestMessage) {
-        final UUri methodUri = requestMessage.getAttributes().getSink();
-        final Consumer<UMessage> handler = mMethodHandlers.get(methodUri);
-        if (handler != null) {
-            handler.accept(requestMessage);
-        }
-    }
-
-    private void executeDoorCommand(@NonNull UMessage requestMessage) {
+    private @NonNull UPayload executeDoorCommand(@NonNull UMessage message) {
         UStatus status;
         try {
-            final DoorCommand request = unpack(requestMessage.getPayload(), DoorCommand.class)
+            final DoorCommand request = UPayload.unpack(message, DoorCommand.class)
                     .orElseThrow(IllegalArgumentException::new);
-            final String instance = request.getDoor().getInstance();
+            final int id = request.getDoor().getId();
             final DoorCommand.Action action = request.getAction();
-            Log.i(TAG, join(Key.REQUEST, "executeDoorCommand", "instance", instance, "action", action));
-            checkArgument(sDoorTopics.containsKey(instance), "Unknown door: " + instance);
+            checkArgument(DOOR_IDS.contains(id), "Unknown door: " + id);
+            Log.i(TAG, join(Key.REQUEST, "executeDoorCommand", Key.ID, id, Key.ACTION, action));
             final boolean locked = switch (action) {
                 case LOCK -> true;
                 case UNLOCK -> false;
                 default -> throw new UStatusException(UCode.INVALID_ARGUMENT, "Unknown action: " + action);
             };
-            // Pretend that all required CAN signals were sent successfully.
-            // Simulate a received signal below.
-            mExecutor.execute(() -> publish(UMessage.newBuilder()
-                    .setPayload(packToAny(Door.newBuilder()
-                            .setInstance(instance)
-                            .setLocked(locked)
-                            .build()))
-                    .setAttributes(UAttributesBuilder.publish(mapDoorTopic(instance), UPriority.UPRIORITY_CS0).build())
+            mClient.publish(UriFactory.fromProto(Example.DESCRIPTOR, id), UPayload.packToAny(Door.newBuilder()
+                    .setId(id)
+                    .setLocked(locked)
                     .build()));
             status = STATUS_OK;
         } catch (Exception e) {
             status = toStatus(e);
         }
         logStatus("executeDoorCommand", status);
-
-        mUPClient.send(UMessage.newBuilder()
-                .setPayload(packToAny(status))
-                .setAttributes(UAttributesBuilder.response(requestMessage.getAttributes()).build())
-                .build());
+        return UPayload.packToAny(status);
     }
 
     private @NonNull UStatus logStatus(@NonNull String method, @NonNull UStatus status, Object... args) {
